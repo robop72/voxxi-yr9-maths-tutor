@@ -45,6 +45,68 @@ function MicIcon({ listening }: { listening: boolean }) {
   );
 }
 
+// ─── Lightweight markdown renderer ───────────────────────────────────────────
+
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    if (part.startsWith("`") && part.endsWith("`"))
+      return <code key={i} className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
+    return part;
+  });
+}
+
+function MarkdownText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let ulBuf: string[] = [];
+  let olBuf: string[] = [];
+  let key = 0;
+
+  const flushUl = () => {
+    if (!ulBuf.length) return;
+    nodes.push(
+      <ul key={key++} className="list-disc pl-5 my-1.5 space-y-0.5">
+        {ulBuf.map((t, i) => <li key={i} className="text-sm leading-relaxed">{renderInline(t)}</li>)}
+      </ul>
+    );
+    ulBuf = [];
+  };
+  const flushOl = () => {
+    if (!olBuf.length) return;
+    nodes.push(
+      <ol key={key++} className="list-decimal pl-5 my-1.5 space-y-0.5">
+        {olBuf.map((t, i) => <li key={i} className="text-sm leading-relaxed">{renderInline(t)}</li>)}
+      </ol>
+    );
+    olBuf = [];
+  };
+
+  for (const line of lines) {
+    if (/^#{1,3}\s/.test(line)) {
+      flushUl(); flushOl();
+      nodes.push(<p key={key++} className="font-semibold text-sm mt-2 mb-0.5 text-gray-900 dark:text-gray-100">{renderInline(line.replace(/^#{1,3}\s/, ""))}</p>);
+    } else if (/^[-*]\s/.test(line)) {
+      flushOl();
+      ulBuf.push(line.replace(/^[-*]\s/, ""));
+    } else if (/^\d+\.\s/.test(line)) {
+      flushUl();
+      olBuf.push(line.replace(/^\d+\.\s/, ""));
+    } else if (line.trim() === "") {
+      flushUl(); flushOl();
+    } else {
+      flushUl(); flushOl();
+      nodes.push(<p key={key++} className="text-sm leading-relaxed">{renderInline(line)}</p>);
+    }
+  }
+  flushUl(); flushOl();
+  return <div className="space-y-1">{nodes}</div>;
+}
+
 // ─── Thinking bubble ──────────────────────────────────────────────────────────
 
 function ThinkingBubble() {
@@ -64,41 +126,69 @@ function ThinkingBubble() {
   );
 }
 
-// ─── Tutor bubble — click icon to read/stop this specific message ─────────────
+// ─── Tutor bubble — paragraph-reveal + markdown ───────────────────────────────
 
-function TutorBubble({ message, isActive, onPlay, onStop }: {
+function TutorBubble({ message, isNew, isActive, onPlay, onStop }: {
   message: Message;
+  isNew: boolean;
   isActive: boolean;
   onPlay: () => void;
   onStop: () => void;
 }) {
+  const paragraphs = message.text.split(/\n\n+/).filter(Boolean);
+  const [visible, setVisible] = useState(isNew ? 1 : paragraphs.length);
+  const animating = useRef(isNew);
+
+  useEffect(() => {
+    if (!animating.current) return;
+    if (visible >= paragraphs.length) { animating.current = false; return; }
+    const t = setTimeout(() => setVisible(v => v + 1), 380);
+    return () => clearTimeout(t);
+  }, [visible, paragraphs.length]);
+
+  const isDone = visible >= paragraphs.length;
+  const displayedText = paragraphs.slice(0, visible).join("\n\n");
+
   return (
-    <div className="voxii-bubble-tutor group">
-      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
-      <button
-        onClick={isActive ? onStop : onPlay}
-        aria-label={isActive ? "Stop reading" : "Read this message"}
-        title={isActive ? "Stop reading" : "Read this message"}
-        className={`mt-2 flex items-center gap-1.5 text-xs transition-colors ${
-          isActive ? "text-blue-500" : "text-gray-300 dark:text-gray-600 hover:text-blue-400 dark:hover:text-blue-400"
-        }`}
-      >
-        {isActive ? (
-          <>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-              <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
-            </svg>
-            <span>Stop</span>
-          </>
-        ) : (
-          <>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-              <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-            </svg>
-            <span>Read aloud</span>
-          </>
-        )}
-      </button>
+    <div className="voxii-bubble-tutor">
+      <MarkdownText text={displayedText} />
+
+      {/* Typing indicator while revealing */}
+      {!isDone && (
+        <span className="flex gap-1 mt-2">
+          {[0, 1, 2].map(i => (
+            <span key={i} className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }} />
+          ))}
+        </span>
+      )}
+
+      {/* Read aloud button — only shown once fully revealed */}
+      {isDone && (
+        <button
+          onClick={isActive ? onStop : onPlay}
+          aria-label={isActive ? "Stop reading" : "Read this message"}
+          className={`mt-2 flex items-center gap-1.5 text-xs transition-colors ${
+            isActive ? "text-blue-500" : "text-gray-300 dark:text-gray-600 hover:text-blue-400"
+          }`}
+        >
+          {isActive ? (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+              </svg>
+              <span>Stop</span>
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+              </svg>
+              <span>Read aloud</span>
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -155,6 +245,21 @@ export default function ChatInterface() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
+
+  // Track the most recently received tutor message for paragraph-reveal
+  const [latestTutorId, setLatestTutorId] = useState<string | null>(null);
+  const wasLoading = useRef(false);
+
+  useEffect(() => {
+    if (wasLoading.current && !isLoading) {
+      const last = messages[messages.length - 1];
+      if (last?.role === "tutor") setLatestTutorId(last.id);
+    }
+    wasLoading.current = isLoading;
+  }, [isLoading, messages]);
+
+  // Reset when switching sessions
+  useEffect(() => { setLatestTutorId(null); }, [currentId]);
 
   // TTS state
   const [readAloud, setReadAloud] = useState(false);
@@ -340,6 +445,7 @@ export default function ChatInterface() {
                     <TutorBubble
                       key={msg.id}
                       message={msg}
+                      isNew={msg.id === latestTutorId}
                       isActive={activeMsgId === msg.id}
                       onPlay={() => handlePlay(msg)}
                       onStop={handleStop}
