@@ -107,21 +107,72 @@ function MarkdownText({ text }: { text: string }) {
   return <div className="space-y-1">{nodes}</div>;
 }
 
-// ─── Thinking bubble ──────────────────────────────────────────────────────────
+// ─── Voxxi thinking animation ─────────────────────────────────────────────────
 
 function ThinkingBubble() {
   return (
     <div className="voxii-thinking-bubble">
-      <span className="text-sm text-gray-400 dark:text-gray-500 italic">Voxxi is thinking</span>
-      <span className="flex gap-1 ml-1">
-        {[0, 1, 2].map(i => (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce"
-            style={{ animationDelay: `${i * 0.15}s` }}
+      {/* Rotating arc + V icon */}
+      <div className="relative flex-shrink-0 w-10 h-10">
+        {/* Spinning gradient arc */}
+        <svg
+          viewBox="0 0 40 40"
+          fill="none"
+          className="absolute inset-0 w-full h-full"
+          style={{ animation: "voxxi-arc-spin 1.6s linear infinite" }}
+        >
+          <defs>
+            <linearGradient id="voxxi-arc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stopColor="#2563EB" stopOpacity="0" />
+              <stop offset="35%"  stopColor="#3B82F6" stopOpacity="0.9" />
+              <stop offset="65%"  stopColor="#06B6D4" stopOpacity="1" />
+              <stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* Partial arc — ~120° of the circle */}
+          <circle
+            cx="20" cy="20" r="17"
+            stroke="url(#voxxi-arc-grad)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeDasharray="36 71"
           />
-        ))}
-      </span>
+        </svg>
+
+        {/* Central V with gradient + pulse */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ animation: "voxxi-v-pulse 2s ease-in-out infinite" }}
+        >
+          <span
+            className="text-base font-extrabold select-none"
+            style={{
+              background: "linear-gradient(135deg, #2563EB 30%, #06B6D4 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            V
+          </span>
+        </div>
+      </div>
+
+      {/* Text + animated dots */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm text-gray-500 dark:text-gray-400 italic">
+          Voxxi is thinking
+        </span>
+        <span className="flex items-end gap-0.5 pb-0.5">
+          {[0, 1, 2].map(i => (
+            <span
+              key={i}
+              className="w-1 h-1 rounded-full bg-blue-400 inline-block"
+              style={{ animation: `thinking-dot 1.4s ease-in-out ${i * 0.18}s infinite` }}
+            />
+          ))}
+        </span>
+      </div>
     </div>
   );
 }
