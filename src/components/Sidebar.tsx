@@ -14,6 +14,8 @@ interface Props {
   onOpenSearch: () => void;
   dark: boolean;
   onToggleTheme: () => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
 }
 
 function timeLabel(ts: number) {
@@ -29,6 +31,7 @@ function timeLabel(ts: number) {
 export default function Sidebar({
   sessions, currentId, studentName, onUpdateName,
   onNewChat, onLoadSession, onOpenSearch, dark, onToggleTheme,
+  mobileOpen, onMobileClose,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [nameInput, setNameInput] = useState(studentName);
@@ -49,7 +52,11 @@ export default function Sidebar({
   const groupOrder = ["Today", "Yesterday", "This week", "Earlier"];
 
   return (
-    <aside className="w-64 flex-shrink-0 flex flex-col h-full bg-[#f0f4f9] dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
+    <aside className={`
+      flex-shrink-0 flex flex-col h-full w-64 bg-[#f0f4f9] dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
+      fixed md:relative inset-y-0 left-0 z-40 transition-transform duration-300
+      ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+    `}>
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
@@ -64,7 +71,8 @@ export default function Sidebar({
             priority
           />
         </div>
-        {/* Search icon */}
+        {/* Search icon + mobile close */}
+        <div className="flex items-center gap-1">
         <button
           onClick={onOpenSearch}
           title="Search chats"
@@ -74,6 +82,16 @@ export default function Sidebar({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </button>
+        <button
+          onClick={onMobileClose}
+          className="md:hidden p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+          aria-label="Close menu"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        </div>
       </div>
 
       {/* New Chat */}

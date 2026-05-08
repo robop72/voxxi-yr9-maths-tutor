@@ -123,11 +123,11 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
     "What is linear algebra?",
   ];
   return (
-    <div className="flex flex-col items-start justify-center h-full max-w-2xl mx-auto px-4 pt-20">
-      <p className="text-xl text-gray-500 dark:text-gray-400 font-light mb-1">
+    <div className="flex flex-col items-start justify-center h-full max-w-2xl mx-auto px-4 pt-10 md:pt-20">
+      <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 font-light mb-1">
         Hello {studentName},
       </p>
-      <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-10">
+      <h2 className="text-2xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 mb-8 md:mb-10">
         I am Voxxi your Year 9 Maths Tutor
       </h2>
       <div className="flex flex-wrap gap-2">
@@ -153,6 +153,7 @@ export default function ChatInterface() {
 
   const [studentName, setStudentName] = useState("Student");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
 
   // TTS state
@@ -287,23 +288,47 @@ export default function ChatInterface() {
         />
       )}
 
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar
         sessions={sessions}
         currentId={currentId}
         studentName={studentName}
         onUpdateName={updateStudentName}
-        onNewChat={startNewChat}
-        onLoadSession={loadSession}
-        onOpenSearch={() => setSearchOpen(true)}
+        onNewChat={() => { startNewChat(); setSidebarOpen(false); }}
+        onLoadSession={id => { loadSession(id); setSidebarOpen(false); }}
+        onOpenSearch={() => { setSearchOpen(true); setSidebarOpen(false); }}
         dark={dark}
         onToggleTheme={toggleTheme}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
 
       {/* ── Right: chat area ── */}
       <div className="flex-1 flex flex-col min-w-0">
 
+        {/* Mobile top bar */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Open menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxxi Maths Tutor</span>
+        </div>
+
         {/* Message list */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6">
           {isEmpty ? (
             <WelcomeScreen studentName={studentName} onSend={sendMessage} />
           ) : (
@@ -328,22 +353,22 @@ export default function ChatInterface() {
         </div>
 
         {/* ── Input bar ── */}
-        <div className="px-4 py-4 bg-[#f8f9fa] dark:bg-gray-950">
+        <div className="px-3 md:px-4 py-3 md:py-4 bg-[#f8f9fa] dark:bg-gray-950">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-end gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl px-4 py-3 shadow-sm focus-within:border-blue-400 focus-within:shadow-md transition-all">
+            <div className="flex items-end gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl px-3 md:px-4 py-2.5 md:py-3 shadow-sm focus-within:border-blue-400 focus-within:shadow-md transition-all">
 
-              {/* Read Aloud toggle — bottom left of input bar */}
+              {/* Read Aloud toggle */}
               <button
                 onClick={toggleReadAloud}
                 title={readAloud ? "Read Aloud: ON — click to turn off" : "Read Aloud: OFF — click to turn on"}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all ${
+                className={`flex-shrink-0 flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-full text-xs font-medium transition-all ${
                   readAloud
                     ? "bg-blue-500 text-white shadow-sm"
                     : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
                 {readAloud ? <SpeakerOnIcon /> : <SpeakerOffIcon />}
-                <span>{readAloud ? "Read Aloud: ON" : "Read Aloud"}</span>
+                <span className="hidden sm:inline">{readAloud ? "Read Aloud: ON" : "Read Aloud"}</span>
               </button>
 
               <textarea
@@ -381,7 +406,7 @@ export default function ChatInterface() {
               </button>
             </div>
 
-            <p className="text-center text-xs text-gray-400 mt-2">
+            <p className="text-center text-xs text-gray-400 mt-2 hidden sm:block">
               Enter to send · Shift+Enter for new line
             </p>
           </div>
