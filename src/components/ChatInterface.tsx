@@ -1,0 +1,392 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useChat, Message } from "@/hooks/useChat";
+import { useTheme } from "@/hooks/useTheme";
+import { speak, stopSpeaking } from "@/utils/tts";
+import { startListening, isSpeechSupported } from "@/utils/stt";
+import Sidebar from "@/components/Sidebar";
+import SearchModal from "@/components/SearchModal";
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function SendIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+      <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+    </svg>
+  );
+}
+
+function SpeakerOnIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+      <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
+      <path d="M15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
+    </svg>
+  );
+}
+
+function SpeakerOffIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+      <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 001.06 1.06L19.5 13.06l1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 00-1.06-1.06L19.5 10.94l-1.72-1.72z" />
+    </svg>
+  );
+}
+
+function MicIcon({ listening }: { listening: boolean }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+      className={`w-5 h-5 transition-colors ${listening ? "text-white" : ""}`}>
+      <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+      <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.041h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.041a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
+    </svg>
+  );
+}
+
+// ─── Thinking bubble ──────────────────────────────────────────────────────────
+
+function ThinkingBubble() {
+  return (
+    <div className="voxii-thinking-bubble">
+      <span className="text-sm text-gray-400 dark:text-gray-500 italic">Voxxi is thinking</span>
+      <span className="flex gap-1 ml-1">
+        {[0, 1, 2].map(i => (
+          <span
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce"
+            style={{ animationDelay: `${i * 0.15}s` }}
+          />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+// ─── Tutor bubble — click icon to read/stop this specific message ─────────────
+
+function TutorBubble({ message, isActive, onPlay, onStop }: {
+  message: Message;
+  isActive: boolean;
+  onPlay: () => void;
+  onStop: () => void;
+}) {
+  return (
+    <div className="voxii-bubble-tutor group">
+      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+      <button
+        onClick={isActive ? onStop : onPlay}
+        aria-label={isActive ? "Stop reading" : "Read this message"}
+        title={isActive ? "Stop reading" : "Read this message"}
+        className={`mt-2 flex items-center gap-1.5 text-xs transition-colors ${
+          isActive ? "text-blue-500" : "text-gray-300 dark:text-gray-600 hover:text-blue-400 dark:hover:text-blue-400"
+        }`}
+      >
+        {isActive ? (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+              <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+            </svg>
+            <span>Stop</span>
+          </>
+        ) : (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+              <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+            </svg>
+            <span>Read aloud</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ─── User bubble ─────────────────────────────────────────────────────────────
+
+function UserBubble({ message }: { message: Message }) {
+  return (
+    <div className="voxii-bubble-user">
+      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+    </div>
+  );
+}
+
+// ─── Welcome screen ───────────────────────────────────────────────────────────
+
+function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (t: string) => void }) {
+  const prompts = [
+    "Solve a quadratic equation",
+    "Explain Pythagoras' theorem",
+    "Help me with fractions",
+    "What is linear algebra?",
+  ];
+  return (
+    <div className="flex flex-col items-start justify-center h-full max-w-2xl mx-auto px-4 pt-20">
+      <p className="text-xl text-gray-500 dark:text-gray-400 font-light mb-1">
+        Hello {studentName},
+      </p>
+      <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-10">
+        I am Voxxi your Year 9 Maths Tutor
+      </h2>
+      <div className="flex flex-wrap gap-2">
+        {prompts.map(p => (
+          <button
+            key={p}
+            onClick={() => onSend(p)}
+            className="px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-gray-800 transition-colors shadow-sm"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
+
+export default function ChatInterface() {
+  const { dark, toggle: toggleTheme } = useTheme();
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession } = useChat();
+
+  const [studentName, setStudentName] = useState("Student");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [input, setInput] = useState("");
+
+  // TTS state
+  const [readAloud, setReadAloud] = useState(false);
+  const [activeMsgId, setActiveMsgId] = useState<string | null>(null);
+  const lastSpokenId = useRef<string | null>(null);
+
+  // STT state
+  const [listening, setListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const stopListeningRef = useRef<(() => void) | null>(null);
+  const interimRef = useRef("");
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("voxxi-student-name");
+    if (stored) setStudentName(stored);
+    const tts = localStorage.getItem("voxxi-read-aloud");
+    if (tts === "true") setReadAloud(true);
+    setSpeechSupported(isSpeechSupported());
+  }, []);
+
+  const toggleMic = useCallback(() => {
+    if (listening) {
+      stopListeningRef.current?.();
+      stopListeningRef.current = null;
+      setListening(false);
+      interimRef.current = "";
+      return;
+    }
+
+    setListening(true);
+    interimRef.current = input;
+
+    stopListeningRef.current = startListening(
+      (interim) => {
+        setInput(interimRef.current + interim);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+        }
+      },
+      (final) => {
+        const next = interimRef.current + final;
+        interimRef.current = next;
+        setInput(next);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+        }
+      },
+      () => {
+        setListening(false);
+        stopListeningRef.current = null;
+      }
+    );
+  }, [listening, input]);
+
+  const toggleReadAloud = () => {
+    const next = !readAloud;
+    setReadAloud(next);
+    localStorage.setItem("voxxi-read-aloud", String(next));
+    if (!next) {
+      stopSpeaking();
+      setActiveMsgId(null);
+    }
+  };
+
+  // Auto-read new tutor messages when readAloud is on
+  useEffect(() => {
+    if (!readAloud) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "tutor") return;
+    if (last.id === lastSpokenId.current) return;
+    lastSpokenId.current = last.id;
+    setActiveMsgId(last.id);
+    speak(last.text, () => setActiveMsgId(null));
+  }, [messages, readAloud]);
+
+  const handlePlay = useCallback((msg: Message) => {
+    setActiveMsgId(msg.id);
+    lastSpokenId.current = msg.id;
+    speak(msg.text, () => setActiveMsgId(null));
+  }, []);
+
+  const handleStop = useCallback(() => {
+    stopSpeaking();
+    setActiveMsgId(null);
+  }, []);
+
+  const updateStudentName = (name: string) => {
+    setStudentName(name);
+    localStorage.setItem("voxxi-student-name", name);
+  };
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  const handleSubmit = useCallback(async () => {
+    const text = input.trim();
+    if (!text || isLoading) return;
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    await sendMessage(text);
+  }, [input, isLoading, sendMessage]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+  };
+
+  const isEmpty = messages.length === 0 && !isLoading;
+
+  return (
+    <div className="flex h-full bg-[#f8f9fa] dark:bg-gray-950">
+      {searchOpen && (
+        <SearchModal
+          sessions={sessions}
+          onSelect={id => { loadSession(id); setSearchOpen(false); }}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
+
+      <Sidebar
+        sessions={sessions}
+        currentId={currentId}
+        studentName={studentName}
+        onUpdateName={updateStudentName}
+        onNewChat={startNewChat}
+        onLoadSession={loadSession}
+        onOpenSearch={() => setSearchOpen(true)}
+        dark={dark}
+        onToggleTheme={toggleTheme}
+      />
+
+      {/* ── Right: chat area ── */}
+      <div className="flex-1 flex flex-col min-w-0">
+
+        {/* Message list */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          {isEmpty ? (
+            <WelcomeScreen studentName={studentName} onSend={sendMessage} />
+          ) : (
+            <div className="max-w-2xl mx-auto flex flex-col">
+              {messages.map(msg =>
+                msg.role === "user"
+                  ? <UserBubble key={msg.id} message={msg} />
+                  : (
+                    <TutorBubble
+                      key={msg.id}
+                      message={msg}
+                      isActive={activeMsgId === msg.id}
+                      onPlay={() => handlePlay(msg)}
+                      onStop={handleStop}
+                    />
+                  )
+              )}
+              {isLoading && <ThinkingBubble />}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        {/* ── Input bar ── */}
+        <div className="px-4 py-4 bg-[#f8f9fa] dark:bg-gray-950">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-end gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl px-4 py-3 shadow-sm focus-within:border-blue-400 focus-within:shadow-md transition-all">
+
+              {/* Read Aloud toggle — bottom left of input bar */}
+              <button
+                onClick={toggleReadAloud}
+                title={readAloud ? "Read Aloud: ON — click to turn off" : "Read Aloud: OFF — click to turn on"}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all ${
+                  readAloud
+                    ? "bg-blue-500 text-white shadow-sm"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                {readAloud ? <SpeakerOnIcon /> : <SpeakerOffIcon />}
+                <span>{readAloud ? "Read Aloud: ON" : "Read Aloud"}</span>
+              </button>
+
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={input}
+                onChange={handleInput}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask Voxxi a maths question…"
+                className="flex-1 resize-none bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none leading-relaxed max-h-40 py-1"
+              />
+
+              {speechSupported && (
+                <button
+                  onClick={toggleMic}
+                  title={listening ? "Stop listening" : "Speak your question"}
+                  className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                    listening
+                      ? "bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-md shadow-red-200 dark:shadow-red-900"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
+                  aria-label={listening ? "Stop listening" : "Speak your question"}
+                >
+                  <MicIcon listening={listening} />
+                </button>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={!input.trim() || isLoading}
+                className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                aria-label="Send"
+              >
+                <SendIcon />
+              </button>
+            </div>
+
+            <p className="text-center text-xs text-gray-400 mt-2">
+              Enter to send · Shift+Enter for new line
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

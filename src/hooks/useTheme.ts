@@ -1,0 +1,23 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+export function useTheme() {
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("voxxi-theme");
+    const isDark = stored === "dark";
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem("voxxi-theme", next ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", next);
+  };
+
+  return { dark, toggle };
+}
