@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ChatSession } from "@/hooks/useChat";
 
 interface Props {
@@ -42,9 +43,9 @@ export default function Sidebar({
     onUpdateName(trimmed);
   };
 
-  // Group sessions by time
+  // Group sessions by time — only show sessions that have at least one message
   const groups: Record<string, ChatSession[]> = {};
-  for (const s of sessions) {
+  for (const s of sessions.filter(s => s.messages.length > 0)) {
     const label = timeLabel(s.createdAt);
     if (!groups[label]) groups[label] = [];
     groups[label].push(s);
@@ -138,9 +139,22 @@ export default function Sidebar({
           );
         })}
 
-        {sessions.length === 0 && (
+        {sessions.filter(s => s.messages.length > 0).length === 0 && (
           <p className="text-xs text-gray-400 px-2 italic">No chats yet</p>
         )}
+      </div>
+
+      {/* Parent Portal link */}
+      <div className="px-3 pb-1">
+        <Link
+          href="/parent"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Parent Portal
+        </Link>
       </div>
 
       {/* Settings */}

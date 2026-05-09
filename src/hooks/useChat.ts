@@ -39,15 +39,22 @@ export function useChat() {
   const initialised = useRef(false);
   useEffect(() => {
     if (!initialised.current) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    // Only persist sessions that have at least one message
+    const toSave = sessions.filter(s => s.messages.length > 0);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [sessions]);
 
-  // On mount: load history from localStorage but always open a fresh new chat
+  // On mount: load history, strip empty sessions, rewrite localStorage, then open a fresh chat
   useEffect(() => {
     let history: ChatSession[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) history = JSON.parse(raw) as ChatSession[];
+      if (raw) {
+        const all = JSON.parse(raw) as ChatSession[];
+        history = all.filter(s => s.messages.length > 0);
+        // Rewrite immediately so stale empty sessions are gone
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      }
     } catch { /* ignore */ }
 
     const fresh = makeSession();
@@ -59,7 +66,8 @@ export function useChat() {
   const startNewChat = useCallback(() => {
     const s = makeSession();
     apiSessionRef.current = uuidv4();
-    setSessions(prev => [s, ...prev]);
+    // Remove any existing empty sessions before adding the new one
+    setSessions(prev => [s, ...prev.filter(p => p.messages.length > 0)]);
     setCurrentId(s.id);
   }, []);
 
