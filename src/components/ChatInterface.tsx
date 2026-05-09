@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useChat, Message } from "@/hooks/useChat";
 import { useTheme } from "@/hooks/useTheme";
 import { speak, stopSpeaking } from "@/utils/tts";
@@ -140,22 +141,12 @@ function ThinkingBubble() {
           />
         </svg>
 
-        {/* Central V with gradient + pulse */}
+        {/* Central favicon with pulse */}
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{ animation: "voxxi-v-pulse 2s ease-in-out infinite" }}
         >
-          <span
-            className="text-base font-extrabold select-none"
-            style={{
-              background: "linear-gradient(135deg, #2563EB 30%, #06B6D4 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            V
-          </span>
+          <Image src="/voxii-favicon.png" alt="" width={22} height={22} className="select-none" />
         </div>
       </div>
 
