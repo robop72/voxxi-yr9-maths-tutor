@@ -270,31 +270,31 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
   const selected = STRANDS.find(s => s.id === activeStrand);
 
   return (
-    <div className="flex flex-col max-w-2xl mx-auto px-4 pt-8 md:pt-14 pb-6">
-      <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 font-light mb-1">
+    <div className="flex flex-col max-w-2xl mx-auto px-4 pt-6 md:pt-10 pb-4">
+      <p className="text-base md:text-lg text-gray-500 dark:text-gray-400 font-light mb-0.5">
         Hello {studentName},
       </p>
-      <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">
         I am Voxxi your Year 9 Maths Tutor
       </h2>
-      <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
         Select a curriculum strand to explore topics, or ask me anything below.
       </p>
 
       {/* 6 strand cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
         {STRANDS.map(strand => (
           <button
             key={strand.id}
             onClick={() => setActiveStrand(activeStrand === strand.id ? null : strand.id)}
-            className={`text-left p-3.5 rounded-2xl border transition-all ${
+            className={`text-left px-3 py-2.5 rounded-xl border transition-all ${
               activeStrand === strand.id
                 ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md"
                 : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm"
             }`}
           >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xl">{strand.emoji}</span>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-base">{strand.emoji}</span>
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{strand.id}</span>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 leading-snug">{strand.description}</p>
@@ -304,16 +304,16 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
 
       {/* Topic chips for selected strand */}
       {selected && (
-        <div className="mb-4">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+        <div className="mb-3">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
             {selected.emoji} {selected.id} — pick a topic to get started:
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {selected.topics.map(topic => (
               <button
                 key={topic}
                 onClick={() => onSend(topic)}
-                className="px-3.5 py-1.5 rounded-full text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors shadow-sm"
+                className="px-3 py-1 rounded-full text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors shadow-sm"
               >
                 {topic}
               </button>
