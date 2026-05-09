@@ -75,6 +75,25 @@ export function useChat() {
     setCurrentId(id);
   }, []);
 
+  const deleteSession = useCallback((id: string) => {
+    setSessions(prev => {
+      const remaining = prev.filter(s => s.id !== id);
+      // If we deleted the active session, switch to the next available one or create fresh
+      if (currentIdRef.current === id) {
+        const next = remaining.find(s => s.messages.length > 0);
+        if (next) {
+          setCurrentId(next.id);
+        } else {
+          const fresh = makeSession();
+          apiSessionRef.current = uuidv4();
+          setCurrentId(fresh.id);
+          return [fresh];
+        }
+      }
+      return remaining;
+    });
+  }, []);
+
   const cancelMessage = useCallback(() => {
     if (!isLoadingRef.current) return;
     abortRef.current?.abort();
@@ -148,5 +167,5 @@ export function useChat() {
 
   const messages = sessions.find(s => s.id === currentId)?.messages ?? [];
 
-  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, cancelMessage };
+  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, cancelMessage };
 }

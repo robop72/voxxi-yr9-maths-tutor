@@ -335,7 +335,7 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
 
 export default function ChatInterface() {
   const { dark, toggle: toggleTheme } = useTheme();
-  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, cancelMessage } = useChat();
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, cancelMessage } = useChat();
 
   const [studentName, setStudentName] = useState("Student");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -504,6 +504,7 @@ export default function ChatInterface() {
         onUpdateName={updateStudentName}
         onNewChat={() => { startNewChat(); setSidebarOpen(false); }}
         onLoadSession={id => { loadSession(id); setSidebarOpen(false); }}
+        onDeleteSession={id => deleteSession(id)}
         onOpenSearch={() => { setSearchOpen(true); setSidebarOpen(false); }}
         dark={dark}
         onToggleTheme={toggleTheme}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChatSession } from "@/hooks/useChat";
@@ -12,6 +12,7 @@ interface Props {
   onUpdateName: (name: string) => void;
   onNewChat: () => void;
   onLoadSession: (id: string) => void;
+  onDeleteSession: (id: string) => void;
   onOpenSearch: () => void;
   dark: boolean;
   onToggleTheme: () => void;
@@ -31,11 +32,23 @@ function timeLabel(ts: number) {
 
 export default function Sidebar({
   sessions, currentId, studentName, onUpdateName,
-  onNewChat, onLoadSession, onOpenSearch, dark, onToggleTheme,
+  onNewChat, onLoadSession, onDeleteSession, onOpenSearch, dark, onToggleTheme,
   mobileOpen, onMobileClose,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [nameInput, setNameInput] = useState(studentName);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const handleNameSave = () => {
     const trimmed = nameInput.trim() || "Student";
@@ -53,7 +66,7 @@ export default function Sidebar({
   const groupOrder = ["Today", "Yesterday", "This week", "Earlier"];
 
   return (
-    <aside className={`
+    <aside ref={sidebarRef} className={`
       flex-shrink-0 flex flex-col h-full w-64 bg-[#f0f4f9] dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
       fixed md:relative inset-y-0 left-0 z-40 transition-transform duration-300
       ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
@@ -123,17 +136,57 @@ export default function Sidebar({
             <div key={label}>
               <p className="text-xs text-gray-400 dark:text-gray-500 px-2 mb-1">{label}</p>
               {group.map(s => (
-                <button
+                <div
                   key={s.id}
-                  onClick={() => onLoadSession(s.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
+                  className={`group relative flex items-center rounded-lg transition-colors ${
                     s.id === currentId
-                      ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-800"
+                      ? "bg-white dark:bg-gray-700 shadow-sm"
+                      : "hover:bg-white/70 dark:hover:bg-gray-800"
                   }`}
                 >
-                  {s.title}
-                </button>
+                  <button
+                    onClick={() => { onLoadSession(s.id); setMenuOpenId(null); }}
+                    className={`flex-1 text-left px-3 py-2 text-sm truncate ${
+                      s.id === currentId
+                        ? "text-gray-900 dark:text-gray-100 font-medium"
+                        : "text-gray-600 dark:text-gray-400"
+                    }`}
+                  >
+                    {s.title}
+                  </button>
+
+                  {/* Three-dot menu button — visible on hover or when menu is open */}
+                  <button
+                    onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === s.id ? null : s.id); }}
+                    className={`flex-shrink-0 p-1.5 mr-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${
+                      menuOpenId === s.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                    aria-label="Chat options"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown */}
+                  {menuOpenId === s.id && (
+                    <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[120px]">
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setMenuOpenId(null);
+                          onDeleteSession(s.id);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           );
