@@ -99,6 +99,22 @@ export function useChat() {
     setSessions(prev => prev.map(s => s.id === id ? { ...s, pinned: !s.pinned } : s));
   }, []);
 
+  // Inject a synthetic tutor message (used for client-side safety blocks)
+  const injectSafetyMessage = useCallback((userText: string, safetyResponse: string) => {
+    const sid = currentIdRef.current;
+    const userMsg: Message = { id: uuidv4(), role: "user", text: userText };
+    const tutorMsg: Message = { id: uuidv4(), role: "tutor", text: safetyResponse };
+    setSessions(prev => prev.map(s => {
+      if (s.id !== sid) return s;
+      return {
+        ...s,
+        title: s.messages.length === 0 ? userText.slice(0, 55) : s.title,
+        messages: [...s.messages, userMsg, tutorMsg],
+      };
+    }));
+    return tutorMsg.id;
+  }, []);
+
   const cancelMessage = useCallback(() => {
     if (!isLoadingRef.current) return;
     abortRef.current?.abort();
@@ -172,5 +188,5 @@ export function useChat() {
 
   const messages = sessions.find(s => s.id === currentId)?.messages ?? [];
 
-  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, cancelMessage };
+  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage };
 }

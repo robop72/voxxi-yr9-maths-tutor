@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useParentAnalytics } from "@/hooks/useParentAnalytics";
+import { getReports, SafetyReport } from "@/utils/safety";
 
 // ── SVG Activity Ring ────────────────────────────────────────────────────────
 function ActivityRing({
@@ -191,11 +192,14 @@ function SessionRow({
 export default function ParentDashboard() {
   const router = useRouter();
   const analytics = useParentAnalytics();
+  const [reports, setReports] = useState<SafetyReport[]>([]);
 
   useEffect(() => {
     if (sessionStorage.getItem("voxxi-parent-auth") !== "true") {
       router.replace("/parent");
+      return;
     }
+    setReports(getReports());
   }, [router]);
 
   function signOut() {
@@ -352,6 +356,31 @@ export default function ParentDashboard() {
             </div>
           )}
         </section>
+
+        {/* Flagged Responses */}
+        {reports.length > 0 && (
+          <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/40 p-5">
+            <h2 className="text-sm font-semibold text-red-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H12.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+              </svg>
+              Flagged Responses ({reports.length})
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Responses your student marked as wrong or inappropriate.
+            </p>
+            <div className="space-y-3">
+              {reports.map(r => (
+                <div key={r.id} className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 p-3">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
+                    {new Date(r.reportedAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">{r.messageText}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Coming Soon */}
         <section>

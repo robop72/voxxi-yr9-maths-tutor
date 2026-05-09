@@ -6,6 +6,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { speak, stopSpeaking } from "@/utils/tts";
 import { startListening, isSpeechSupported } from "@/utils/stt";
 import { STRANDS, detectStrand, getStrand } from "@/utils/strands";
+import { checkInputSafety, saveReport } from "@/utils/safety";
 import Sidebar from "@/components/Sidebar";
 import SearchModal from "@/components/SearchModal";
 
@@ -169,15 +170,37 @@ function ThinkingBubble() {
   );
 }
 
+// ─── Report button ────────────────────────────────────────────────────────────
+
+function ReportButton({ messageText }: { messageText: string }) {
+  const [reported, setReported] = useState(false);
+  if (reported) {
+    return <span className="text-xs text-green-500 flex items-center gap-1">✓ Flagged — thank you</span>;
+  }
+  return (
+    <button
+      onClick={() => { saveReport(messageText); setReported(true); }}
+      title="Report this response as wrong or inappropriate"
+      className="flex items-center gap-1 text-xs text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors"
+    >
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H12.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+      </svg>
+      <span>Report</span>
+    </button>
+  );
+}
+
 // ─── Tutor bubble — paragraph-reveal + markdown ───────────────────────────────
 
-function TutorBubble({ message, isNew, isActive, onPlay, onStop, strand }: {
+function TutorBubble({ message, isNew, isActive, onPlay, onStop, strand, isSafety }: {
   message: Message;
   isNew: boolean;
   isActive: boolean;
   onPlay: () => void;
   onStop: () => void;
   strand?: string | null;
+  isSafety?: boolean;
 }) {
   const paragraphs = message.text.split(/\n\n+/).filter(Boolean);
   const [visible, setVisible] = useState(isNew ? 1 : paragraphs.length);
@@ -214,31 +237,39 @@ function TutorBubble({ message, isNew, isActive, onPlay, onStop, strand }: {
         </span>
       )}
 
-      {/* Read aloud button — only shown once fully revealed */}
+      {/* Action buttons — only shown once fully revealed */}
       {isDone && (
-        <button
-          onClick={isActive ? onStop : onPlay}
-          aria-label={isActive ? "Stop reading" : "Read this message"}
-          className={`mt-2 flex items-center gap-1.5 text-xs transition-colors ${
-            isActive ? "text-blue-500" : "text-gray-300 dark:text-gray-600 hover:text-blue-400"
-          }`}
-        >
-          {isActive ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-                <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
-              </svg>
-              <span>Stop</span>
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-                <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-              </svg>
-              <span>Read aloud</span>
-            </>
+        <div className="mt-2 flex items-center gap-3">
+          {/* Read aloud */}
+          {!isSafety && (
+            <button
+              onClick={isActive ? onStop : onPlay}
+              aria-label={isActive ? "Stop reading" : "Read this message"}
+              className={`flex items-center gap-1.5 text-xs transition-colors ${
+                isActive ? "text-blue-500" : "text-gray-300 dark:text-gray-600 hover:text-blue-400"
+              }`}
+            >
+              {isActive ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                    <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+                  </svg>
+                  <span>Stop</span>
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                    <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                  </svg>
+                  <span>Read aloud</span>
+                </>
+              )}
+            </button>
           )}
-        </button>
+
+          {/* Report button */}
+          <ReportButton messageText={message.text} />
+        </div>
       )}
     </div>
   );
@@ -318,6 +349,16 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
           ↑ Click a strand to see Year 9 topics
         </p>
       )}
+
+      {/* Privacy reminder */}
+      <div className="mt-5 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+        <svg className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <p className="text-xs text-blue-600 dark:text-blue-300 leading-relaxed">
+          <strong>Stay safe:</strong> Don&apos;t share your full name, school, phone number, or address in this chat. Voxxi is here for maths only.
+        </p>
+      </div>
     </div>
   );
 }
@@ -326,7 +367,7 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
 
 export default function ChatInterface() {
   const { dark, toggle: toggleTheme } = useTheme();
-  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, cancelMessage } = useChat();
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat();
 
   const [studentName, setStudentName] = useState("Student");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -361,6 +402,7 @@ export default function ChatInterface() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const safetyMessageIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const stored = localStorage.getItem("voxxi-student-name");
@@ -452,8 +494,16 @@ export default function ChatInterface() {
     if (!text || isLoading) return;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    const safety = checkInputSafety(text);
+    if (safety.block && safety.response) {
+      const msgId = injectSafetyMessage(text, safety.response);
+      safetyMessageIds.current.add(msgId);
+      setLatestTutorId(msgId);
+      return;
+    }
     await sendMessage(text);
-  }, [input, isLoading, sendMessage]);
+  }, [input, isLoading, sendMessage, injectSafetyMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -540,6 +590,7 @@ export default function ChatInterface() {
                     onPlay={() => handlePlay(msg)}
                     onStop={handleStop}
                     strand={strand}
+                    isSafety={safetyMessageIds.current.has(msg.id)}
                   />
                 );
               })}
