@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { useChat, Message } from "@/hooks/useChat";
 import { useTheme } from "@/hooks/useTheme";
 import { speak, stopSpeaking } from "@/utils/tts";
@@ -146,7 +145,8 @@ function ThinkingBubble() {
           className="absolute inset-0 flex items-center justify-center"
           style={{ animation: "voxxi-v-pulse 2s ease-in-out infinite" }}
         >
-          <Image src="/voxii-favicon.png" alt="" width={22} height={22} className="select-none" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/voxii-favicon.png" alt="" width={22} height={22} className="select-none" />
         </div>
       </div>
 
