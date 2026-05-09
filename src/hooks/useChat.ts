@@ -16,6 +16,7 @@ export interface ChatSession {
   title: string;
   messages: Message[];
   createdAt: number;
+  pinned?: boolean;
 }
 
 const STORAGE_KEY = "voxxi-sessions";
@@ -94,6 +95,10 @@ export function useChat() {
     });
   }, []);
 
+  const togglePin = useCallback((id: string) => {
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, pinned: !s.pinned } : s));
+  }, []);
+
   const cancelMessage = useCallback(() => {
     if (!isLoadingRef.current) return;
     abortRef.current?.abort();
@@ -167,5 +172,5 @@ export function useChat() {
 
   const messages = sessions.find(s => s.id === currentId)?.messages ?? [];
 
-  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, cancelMessage };
+  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, cancelMessage };
 }

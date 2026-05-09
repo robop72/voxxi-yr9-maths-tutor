@@ -13,6 +13,7 @@ interface Props {
   onNewChat: () => void;
   onLoadSession: (id: string) => void;
   onDeleteSession: (id: string) => void;
+  onTogglePin: (id: string) => void;
   onOpenSearch: () => void;
   dark: boolean;
   onToggleTheme: () => void;
@@ -30,9 +31,99 @@ function timeLabel(ts: number) {
   return "Earlier";
 }
 
+function PinIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 12V4h1a1 1 0 000-2H7a1 1 0 000 2h1v8l-2 2v2h5v5l1 1 1-1v-5h5v-2l-2-2z"/>
+    </svg>
+  );
+}
+
+interface RowProps {
+  s: ChatSession;
+  currentId: string;
+  menuOpenId: string | null;
+  setMenuOpenId: (id: string | null) => void;
+  onLoadSession: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  onDeleteSession: (id: string) => void;
+}
+
+function SessionRow({ s, currentId, menuOpenId, setMenuOpenId, onLoadSession, onTogglePin, onDeleteSession }: RowProps) {
+  return (
+    <div
+      className={`group relative flex items-center rounded-lg transition-colors ${
+        s.id === currentId
+          ? "bg-white dark:bg-gray-700 shadow-sm"
+          : "hover:bg-white/70 dark:hover:bg-gray-800"
+      }`}
+    >
+      {/* Pin button — LEFT side, visible on hover or when pinned */}
+      <button
+        onClick={e => { e.stopPropagation(); onTogglePin(s.id); }}
+        title={s.pinned ? "Unpin" : "Pin chat"}
+        className={`flex-shrink-0 p-1.5 ml-1 rounded-md transition-colors ${
+          s.pinned
+            ? "text-blue-500 opacity-100"
+            : "text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 hover:text-blue-400"
+        }`}
+      >
+        <PinIcon filled={!!s.pinned} />
+      </button>
+
+      {/* Title */}
+      <button
+        onClick={() => { onLoadSession(s.id); setMenuOpenId(null); }}
+        className={`flex-1 text-left px-2 py-2 text-sm truncate ${
+          s.id === currentId
+            ? "text-gray-900 dark:text-gray-100 font-medium"
+            : "text-gray-600 dark:text-gray-400"
+        }`}
+      >
+        {s.title}
+      </button>
+
+      {/* Three-dot menu — RIGHT side */}
+      <button
+        onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === s.id ? null : s.id); }}
+        className={`flex-shrink-0 p-1.5 mr-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${
+          menuOpenId === s.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        }`}
+        aria-label="Chat options"
+      >
+        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+        </svg>
+      </button>
+
+      {/* Dropdown */}
+      {menuOpenId === s.id && (
+        <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[130px]">
+          <button
+            onClick={e => { e.stopPropagation(); setMenuOpenId(null); onTogglePin(s.id); }}
+            className="w-full text-left px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+          >
+            <PinIcon filled={!!s.pinned} />
+            {s.pinned ? "Unpin" : "Pin"}
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); setMenuOpenId(null); onDeleteSession(s.id); }}
+            className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({
   sessions, currentId, studentName, onUpdateName,
-  onNewChat, onLoadSession, onDeleteSession, onOpenSearch, dark, onToggleTheme,
+  onNewChat, onLoadSession, onDeleteSession, onTogglePin, onOpenSearch, dark, onToggleTheme,
   mobileOpen, onMobileClose,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -56,9 +147,13 @@ export default function Sidebar({
     onUpdateName(trimmed);
   };
 
-  // Group sessions by time — only show sessions that have at least one message
+  const withMessages = sessions.filter(s => s.messages.length > 0);
+  const pinned = withMessages.filter(s => s.pinned);
+  const unpinned = withMessages.filter(s => !s.pinned);
+
+  // Group unpinned sessions by time
   const groups: Record<string, ChatSession[]> = {};
-  for (const s of sessions.filter(s => s.messages.length > 0)) {
+  for (const s of unpinned) {
     const label = timeLabel(s.createdAt);
     if (!groups[label]) groups[label] = [];
     groups[label].push(s);
@@ -129,70 +224,33 @@ export default function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 space-y-4 pb-2">
+
+        {/* Pinned section — only shown when at least one chat is pinned */}
+        {pinned.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 px-2 mb-1 flex items-center gap-1">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 12V4h1a1 1 0 000-2H7a1 1 0 000 2h1v8l-2 2v2h5v5l1 1 1-1v-5h5v-2l-2-2z"/>
+              </svg>
+              Pinned
+            </p>
+            {pinned.map(s => <SessionRow key={s.id} s={s} currentId={currentId} menuOpenId={menuOpenId} setMenuOpenId={setMenuOpenId} onLoadSession={onLoadSession} onTogglePin={onTogglePin} onDeleteSession={onDeleteSession} />)}
+          </div>
+        )}
+
+        {/* Time-grouped unpinned sessions */}
         {groupOrder.map(label => {
           const group = groups[label];
           if (!group || group.length === 0) return null;
           return (
             <div key={label}>
               <p className="text-xs text-gray-400 dark:text-gray-500 px-2 mb-1">{label}</p>
-              {group.map(s => (
-                <div
-                  key={s.id}
-                  className={`group relative flex items-center rounded-lg transition-colors ${
-                    s.id === currentId
-                      ? "bg-white dark:bg-gray-700 shadow-sm"
-                      : "hover:bg-white/70 dark:hover:bg-gray-800"
-                  }`}
-                >
-                  <button
-                    onClick={() => { onLoadSession(s.id); setMenuOpenId(null); }}
-                    className={`flex-1 text-left px-3 py-2 text-sm truncate ${
-                      s.id === currentId
-                        ? "text-gray-900 dark:text-gray-100 font-medium"
-                        : "text-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    {s.title}
-                  </button>
-
-                  {/* Three-dot menu button — visible on hover or when menu is open */}
-                  <button
-                    onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === s.id ? null : s.id); }}
-                    className={`flex-shrink-0 p-1.5 mr-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${
-                      menuOpenId === s.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    }`}
-                    aria-label="Chat options"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown */}
-                  {menuOpenId === s.id && (
-                    <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[120px]">
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setMenuOpenId(null);
-                          onDeleteSession(s.id);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {group.map(s => <SessionRow key={s.id} s={s} currentId={currentId} menuOpenId={menuOpenId} setMenuOpenId={setMenuOpenId} onLoadSession={onLoadSession} onTogglePin={onTogglePin} onDeleteSession={onDeleteSession} />)}
             </div>
           );
         })}
 
-        {sessions.filter(s => s.messages.length > 0).length === 0 && (
+        {withMessages.length === 0 && (
           <p className="text-xs text-gray-400 px-2 italic">No chats yet</p>
         )}
       </div>
