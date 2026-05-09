@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -16,22 +16,7 @@ export default function ParentPinPage() {
     }
   }, [router]);
 
-  function handleDigit(d: string) {
-    if (pin.length >= 4) return;
-    const next = pin + d;
-    setPin(next);
-    setError("");
-    if (next.length === 4) {
-      setTimeout(() => verify(next), 150);
-    }
-  }
-
-  function handleBack() {
-    setPin(p => p.slice(0, -1));
-    setError("");
-  }
-
-  function verify(entered: string) {
+  const verify = useCallback((entered: string) => {
     const stored = localStorage.getItem("voxxi-parent-pin") ?? "1234";
     if (entered === stored) {
       sessionStorage.setItem("voxxi-parent-auth", "true");
@@ -42,7 +27,32 @@ export default function ParentPinPage() {
       setError("Incorrect PIN. Please try again.");
       setTimeout(() => setShake(false), 500);
     }
-  }
+  }, [router]);
+
+  const handleDigit = useCallback((d: string) => {
+    setPin(prev => {
+      if (prev.length >= 4) return prev;
+      const next = prev + d;
+      setError("");
+      if (next.length === 4) setTimeout(() => verify(next), 150);
+      return next;
+    });
+  }, [verify]);
+
+  const handleBack = useCallback(() => {
+    setPin(p => p.slice(0, -1));
+    setError("");
+  }, []);
+
+  // Keyboard support
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key >= "0" && e.key <= "9") handleDigit(e.key);
+      else if (e.key === "Backspace") handleBack();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleDigit, handleBack]);
 
   const DIGITS = [
     ["1", "2", "3"],
@@ -117,11 +127,15 @@ export default function ParentPinPage() {
           </p>
         </div>
 
+        {/* Back to student page button */}
         <button
           onClick={() => router.push("/")}
-          className="mt-6 w-full text-sm text-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
         >
-          ← Back to tutor
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to student page
         </button>
       </div>
 
