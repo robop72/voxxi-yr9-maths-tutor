@@ -5,6 +5,7 @@ import { useChat, Message } from "@/hooks/useChat";
 import { useTheme } from "@/hooks/useTheme";
 import { speak, stopSpeaking } from "@/utils/tts";
 import { startListening, isSpeechSupported } from "@/utils/stt";
+import { STRANDS, detectStrand, getStrand } from "@/utils/strands";
 import Sidebar from "@/components/Sidebar";
 import SearchModal from "@/components/SearchModal";
 
@@ -179,12 +180,13 @@ function ThinkingBubble() {
 
 // ─── Tutor bubble — paragraph-reveal + markdown ───────────────────────────────
 
-function TutorBubble({ message, isNew, isActive, onPlay, onStop }: {
+function TutorBubble({ message, isNew, isActive, onPlay, onStop, strand }: {
   message: Message;
   isNew: boolean;
   isActive: boolean;
   onPlay: () => void;
   onStop: () => void;
+  strand?: string | null;
 }) {
   const paragraphs = message.text.split(/\n\n+/).filter(Boolean);
   const [visible, setVisible] = useState(isNew ? 1 : paragraphs.length);
@@ -200,8 +202,15 @@ function TutorBubble({ message, isNew, isActive, onPlay, onStop }: {
   const isDone = visible >= paragraphs.length;
   const displayedText = paragraphs.slice(0, visible).join("\n\n");
 
+  const strandInfo = strand ? getStrand(strand) : null;
+
   return (
     <div className="voxii-bubble-tutor">
+      {strandInfo && (
+        <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full mb-2 font-medium ${strandInfo.badgeBg} ${strandInfo.badgeText}`}>
+          {strandInfo.emoji} {strandInfo.id}
+        </span>
+      )}
       <MarkdownText text={displayedText} />
 
       {/* Typing indicator while revealing */}
@@ -254,34 +263,70 @@ function UserBubble({ message }: { message: Message }) {
   );
 }
 
-// ─── Welcome screen ───────────────────────────────────────────────────────────
+// ─── Welcome screen — strand cards ───────────────────────────────────────────
 
 function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (t: string) => void }) {
-  const prompts = [
-    "Solve a quadratic equation",
-    "Explain Pythagoras' theorem",
-    "Help me with fractions",
-    "What is linear algebra?",
-  ];
+  const [activeStrand, setActiveStrand] = useState<string | null>(null);
+  const selected = STRANDS.find(s => s.id === activeStrand);
+
   return (
-    <div className="flex flex-col items-start justify-center h-full max-w-2xl mx-auto px-4 pt-10 md:pt-20">
+    <div className="flex flex-col max-w-2xl mx-auto px-4 pt-8 md:pt-14 pb-6">
       <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 font-light mb-1">
         Hello {studentName},
       </p>
-      <h2 className="text-2xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 mb-8 md:mb-10">
+      <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
         I am Voxxi your Year 9 Maths Tutor
       </h2>
-      <div className="flex flex-wrap gap-2">
-        {prompts.map(p => (
+      <p className="text-sm text-gray-400 dark:text-gray-500 mb-6">
+        Select a curriculum strand to explore topics, or ask me anything below.
+      </p>
+
+      {/* 6 strand cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+        {STRANDS.map(strand => (
           <button
-            key={p}
-            onClick={() => onSend(p)}
-            className="px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-gray-800 transition-colors shadow-sm"
+            key={strand.id}
+            onClick={() => setActiveStrand(activeStrand === strand.id ? null : strand.id)}
+            className={`text-left p-3.5 rounded-2xl border transition-all ${
+              activeStrand === strand.id
+                ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm"
+            }`}
           >
-            {p}
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xl">{strand.emoji}</span>
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{strand.id}</span>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 leading-snug">{strand.description}</p>
           </button>
         ))}
       </div>
+
+      {/* Topic chips for selected strand */}
+      {selected && (
+        <div className="mb-4">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+            {selected.emoji} {selected.id} — pick a topic to get started:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {selected.topics.map(topic => (
+              <button
+                key={topic}
+                onClick={() => onSend(topic)}
+                className="px-3.5 py-1.5 rounded-full text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors shadow-sm"
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!activeStrand && (
+        <p className="text-xs text-gray-400 dark:text-gray-600 italic">
+          ↑ Click a strand to see Year 9 topics
+        </p>
+      )}
     </div>
   );
 }
@@ -489,20 +534,22 @@ export default function ChatInterface() {
             <WelcomeScreen studentName={studentName} onSend={sendMessage} />
           ) : (
             <div className="max-w-2xl mx-auto flex flex-col">
-              {messages.map(msg =>
-                msg.role === "user"
-                  ? <UserBubble key={msg.id} message={msg} />
-                  : (
-                    <TutorBubble
-                      key={msg.id}
-                      message={msg}
-                      isNew={msg.id === latestTutorId}
-                      isActive={activeMsgId === msg.id}
-                      onPlay={() => handlePlay(msg)}
-                      onStop={handleStop}
-                    />
-                  )
-              )}
+              {messages.map((msg, idx) => {
+                if (msg.role === "user") return <UserBubble key={msg.id} message={msg} />;
+                const prevUser = messages.slice(0, idx).reverse().find(m => m.role === "user");
+                const strand = prevUser ? detectStrand(prevUser.text) : null;
+                return (
+                  <TutorBubble
+                    key={msg.id}
+                    message={msg}
+                    isNew={msg.id === latestTutorId}
+                    isActive={activeMsgId === msg.id}
+                    onPlay={() => handlePlay(msg)}
+                    onStop={handleStop}
+                    strand={strand}
+                  />
+                );
+              })}
               {isLoading && <ThinkingBubble />}
               <div ref={bottomRef} />
             </div>
