@@ -32,28 +32,28 @@ export function useChat() {
   const currentIdRef = useRef("");
   const isLoadingRef = useRef(false);
   const apiSessionRef = useRef(uuidv4());
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => { currentIdRef.current = currentId; }, [currentId]);
 
-  // Persist to localStorage whenever sessions change (after initial load)
   const initialised = useRef(false);
   useEffect(() => {
     if (!initialised.current) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
   }, [sessions]);
 
-  // Load from localStorage on mount
+  // On mount: load history from localStorage but always open a fresh new chat
   useEffect(() => {
-    let list: ChatSession[] = [];
+    let history: ChatSession[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) list = JSON.parse(raw) as ChatSession[];
+      if (raw) history = JSON.parse(raw) as ChatSession[];
     } catch { /* ignore */ }
 
-    if (list.length === 0) list = [makeSession()];
+    const fresh = makeSession();
     initialised.current = true;
-    setSessions(list);
-    setCurrentId(list[0].id);
+    setSessions([fresh, ...history]);
+    setCurrentId(fresh.id);
   }, []);
 
   const startNewChat = useCallback(() => {
@@ -67,12 +67,16 @@ export function useChat() {
     setCurrentId(id);
   }, []);
 
+  const cancelMessage = useCallback(() => {
+    if (!isLoadingRef.current) return;
+    abortRef.current?.abort();
+  }, []);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoadingRef.current) return;
     const sid = currentIdRef.current;
 
     const userMsg: Message = { id: uuidv4(), role: "user", text: text.trim() };
-
     setSessions(prev =>
       prev.map(s => {
         if (s.id !== sid) return s;
@@ -86,12 +90,15 @@ export function useChat() {
 
     isLoadingRef.current = true;
     setIsLoading(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: apiSessionRef.current, message: text.trim() }),
+        signal: controller.signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -99,19 +106,33 @@ export function useChat() {
       setSessions(prev =>
         prev.map(s => s.id !== sid ? s : { ...s, messages: [...s.messages, tutorMsg] })
       );
-    } catch {
-      setSessions(prev =>
-        prev.map(s =>
-          s.id !== sid ? s : {
-            ...s,
-            messages: [
-              ...s.messages,
-              { id: uuidv4(), role: "tutor" as Role, text: "Sorry, I couldn't reach the server. Please try again." },
-            ],
-          }
-        )
-      );
+    } catch (err) {
+      // Aborted by user — remove the user message that was added
+      if (err instanceof Error && err.name === "AbortError") {
+        setSessions(prev =>
+          prev.map(s =>
+            s.id !== sid ? s : {
+              ...s,
+              title: s.messages.length === 1 ? "New Chat" : s.title,
+              messages: s.messages.filter(m => m.id !== userMsg.id),
+            }
+          )
+        );
+      } else {
+        setSessions(prev =>
+          prev.map(s =>
+            s.id !== sid ? s : {
+              ...s,
+              messages: [
+                ...s.messages,
+                { id: uuidv4(), role: "tutor" as Role, text: "Sorry, I couldn't reach the server. Please try again." },
+              ],
+            }
+          )
+        );
+      }
     } finally {
+      abortRef.current = null;
       isLoadingRef.current = false;
       setIsLoading(false);
     }
@@ -119,5 +140,5 @@ export function useChat() {
 
   const messages = sessions.find(s => s.id === currentId)?.messages ?? [];
 
-  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession };
+  return { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, cancelMessage };
 }

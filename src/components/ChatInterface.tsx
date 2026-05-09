@@ -290,7 +290,7 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
 
 export default function ChatInterface() {
   const { dark, toggle: toggleTheme } = useTheme();
-  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession } = useChat();
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, cancelMessage } = useChat();
 
   const [studentName, setStudentName] = useState("Student");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -553,14 +553,27 @@ export default function ChatInterface() {
                 </button>
               )}
 
-              <button
-                onClick={handleSubmit}
-                disabled={!input.trim() || isLoading}
-                className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
-                aria-label="Send"
-              >
-                <SendIcon />
-              </button>
+              {isLoading ? (
+                <button
+                  onClick={cancelMessage}
+                  className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white transition-colors shadow-sm"
+                  aria-label="Stop"
+                  title="Stop response"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={!input.trim()}
+                  className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                  aria-label="Send"
+                >
+                  <SendIcon />
+                </button>
+              )}
             </div>
 
             <p className="text-center text-xs text-gray-400 mt-2 hidden sm:block">
