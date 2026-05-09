@@ -56,7 +56,7 @@ export default function ParentPinPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Image src="/voxii-logo.png" alt="Voxii" width={120} height={38} className="dark:invert" />
+          <Image src="/voxii-logo.png" alt="Voxii" width={120} height={38} />
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">

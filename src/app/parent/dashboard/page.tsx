@@ -200,7 +200,7 @@ export default function ParentDashboard() {
 
   function signOut() {
     sessionStorage.removeItem("voxxi-parent-auth");
-    router.push("/parent");
+    router.push("/");
   }
 
   const {
@@ -225,7 +225,7 @@ export default function ParentDashboard() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Image src="/voxii-logo.png" alt="Voxii" width={80} height={25} className="dark:invert" />
+          <Image src="/voxii-logo.png" alt="Voxii" width={80} height={25} />
           <span className="text-sm text-gray-400 dark:text-gray-500">Parent Portal</span>
         </div>
         <button
