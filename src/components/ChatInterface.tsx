@@ -678,7 +678,7 @@ export default function ChatInterface({ purchasedSubjects }: { purchasedSubjects
                 value={input}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
-                placeholder={`Ask Voxxi a ${activeSubject.toLowerCase()} question…`}
+                placeholder={`Ask Voxxi ${activeSubject.match(/^[AEIOUaeiou]/) ? "an" : "a"} ${activeSubject} question…`}
                 className="flex-1 resize-none bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none leading-relaxed max-h-40 py-1"
               />
 
