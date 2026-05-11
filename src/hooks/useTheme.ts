@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 
 export function useTheme() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem("voxxi-theme");
-    const isDark = stored === "dark";
+    const isDark = stored !== "light";
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
