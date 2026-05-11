@@ -3,7 +3,7 @@ import ChatInterface from "@/components/ChatInterface";
 const currentStudent = {
   name: "Sam",
   year_level: "Year 9",
-  purchased_subjects: ["Maths", "Science", "Digital Literacy"],
+  purchased_subjects: ["English", "Maths", "Science"],
 };
 
 export default function Home() {
