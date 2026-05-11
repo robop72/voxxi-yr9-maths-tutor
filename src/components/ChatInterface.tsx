@@ -323,18 +323,18 @@ function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, o
     : `I am Voxxi your ${yearLevel} Tutor`;
 
   return (
-    <div className="flex flex-col max-w-2xl mx-auto px-4 pt-6 md:pt-10 pb-4">
+    <div className="flex flex-col max-w-2xl mx-auto px-4 pt-4 md:pt-6 pb-4">
       <p className="text-base md:text-lg text-gray-500 dark:text-gray-400 font-light mb-0.5">
         Hello {studentName},
       </p>
       <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">
         {headline}
       </h2>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
         Select a curriculum strand to explore topics, or ask me anything below.
       </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
         {strands.map(strand => (
           <button
             key={strand.title}
@@ -351,7 +351,7 @@ function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, o
       </div>
 
       {/* Privacy reminder */}
-      <div className="mt-5 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+      <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
         <svg className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
