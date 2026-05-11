@@ -146,10 +146,12 @@ export function useChat({ yearLevel, subject }: { yearLevel: string; subject: st
     abortRef.current = controller;
 
     try {
+      const payload = { session_id: apiSessionRef.current, message: text.trim(), year_level: yearLevelRef.current, subject: subjectRef.current };
+      console.log("Sending payload:", { message: payload.message, year_level: payload.year_level, subject: payload.subject });
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: apiSessionRef.current, message: text.trim(), year_level: yearLevelRef.current, subject: subjectRef.current }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
