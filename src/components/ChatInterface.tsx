@@ -5,7 +5,7 @@ import { useChat, Message } from "@/hooks/useChat";
 import { useTheme } from "@/hooks/useTheme";
 import { speak, stopSpeaking } from "@/utils/tts";
 import { startListening, isSpeechSupported } from "@/utils/stt";
-import { STRANDS, detectStrand, getStrand } from "@/utils/strands";
+import { detectStrand, getStrand } from "@/utils/strands";
 import { checkInputSafety, saveReport } from "@/utils/safety";
 import Sidebar from "@/components/Sidebar";
 import SearchModal from "@/components/SearchModal";
@@ -285,11 +285,42 @@ function UserBubble({ message }: { message: Message }) {
   );
 }
 
-// ─── Welcome screen — strand cards ───────────────────────────────────────────
+// ─── Curriculum config ────────────────────────────────────────────────────────
 
-function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (t: string) => void }) {
-  const [activeStrand, setActiveStrand] = useState<string | null>(null);
-  const selected = STRANDS.find(s => s.id === activeStrand);
+const curriculumStrands: Record<string, { title: string; desc: string; icon: string }[]> = {
+  Maths: [
+    { title: "Number", desc: "Surds, indices, financial maths, ratios", icon: "🔢" },
+    { title: "Algebra", desc: "Equations, quadratics, linear functions", icon: "📐" },
+    { title: "Measurement", desc: "Pythagoras, trigonometry, area & volume", icon: "📏" },
+    { title: "Space", desc: "Geometry, transformations, coordinate plane", icon: "🔷" },
+    { title: "Statistics", desc: "Data, graphs, mean, median, scatter plots", icon: "📊" },
+    { title: "Probability", desc: "Chance, tree diagrams, Venn diagrams", icon: "🎲" },
+  ],
+  Science: [
+    { title: "Science Understanding", desc: "Biology, Chemistry, Physics, Earth & Space", icon: "🔬" },
+    { title: "Science as a Human Endeavour", desc: "Nature of science, real-world impact", icon: "🌍" },
+    { title: "Science Inquiry Skills", desc: "Questioning, predicting, evaluating data", icon: "📋" },
+  ],
+  English: [
+    { title: "Language", desc: "Text structure, vocabulary, grammar", icon: "✍️" },
+    { title: "Literature", desc: "Examining contexts, responding to texts", icon: "📚" },
+    { title: "Literacy", desc: "Interacting, reading, writing, creating", icon: "🗣️" },
+  ],
+};
+
+// ─── Welcome screen ───────────────────────────────────────────────────────────
+
+function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, onSend }: {
+  studentName: string;
+  yearLevel: string;
+  activeSubject: string;
+  subjectChosen: boolean;
+  onSend: (t: string) => void;
+}) {
+  const strands = curriculumStrands[activeSubject] ?? [];
+  const headline = subjectChosen
+    ? `I'm your ${activeSubject} study friend`
+    : `I am Voxxi your ${yearLevel} Tutor`;
 
   return (
     <div className="flex flex-col max-w-2xl mx-auto px-4 pt-6 md:pt-10 pb-4">
@@ -297,58 +328,27 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
         Hello {studentName},
       </p>
       <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">
-        I am Voxxi your Year 9 Maths Tutor
+        {headline}
       </h2>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
         Select a curriculum strand to explore topics, or ask me anything below.
       </p>
 
-      {/* 6 strand cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-        {STRANDS.map(strand => (
+        {strands.map(strand => (
           <button
-            key={strand.id}
-            onClick={() => setActiveStrand(activeStrand === strand.id ? null : strand.id)}
-            className={`text-left px-3 py-2.5 rounded-xl border transition-all ${
-              activeStrand === strand.id
-                ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md"
-                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm"
-            }`}
+            key={strand.title}
+            onClick={() => onSend(`Let's study ${strand.title}`)}
+            className="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-400 hover:shadow-sm transition-all"
           >
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-base">{strand.emoji}</span>
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{strand.id}</span>
+              <span className="text-base">{strand.icon}</span>
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{strand.title}</span>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 leading-snug">{strand.description}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 leading-snug">{strand.desc}</p>
           </button>
         ))}
       </div>
-
-      {/* Topic chips for selected strand */}
-      {selected && (
-        <div className="mb-3">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-            {selected.emoji} {selected.id} — pick a topic to get started:
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {selected.topics.map(topic => (
-              <button
-                key={topic}
-                onClick={() => onSend(topic)}
-                className="px-3 py-1 rounded-full text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors shadow-sm"
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!activeStrand && (
-        <p className="text-xs text-gray-400 dark:text-gray-600 italic">
-          ↑ Click a strand to see Year 9 topics
-        </p>
-      )}
 
       {/* Privacy reminder */}
       <div className="mt-5 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
@@ -356,7 +356,7 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         <p className="text-xs text-blue-600 dark:text-blue-300 leading-relaxed">
-          <strong>Stay safe:</strong> Don&apos;t share your full name, school, phone number, or address in this chat. Voxxi is here for maths only.
+          <strong>Stay safe:</strong> Don&apos;t share your full name, school, phone number, or address in this chat. Voxxi is here for {activeSubject.toLowerCase()} only.
         </p>
       </div>
     </div>
@@ -377,6 +377,8 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
   }, [activeSubject]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [studentName, setStudentName] = useState("Student");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [subjectChosen, setSubjectChosen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -559,6 +561,8 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
         onToggleTheme={toggleTheme}
         mobileOpen={sidebarOpen}
         onMobileClose={() => setSidebarOpen(false)}
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(o => !o)}
       />
 
       {/* ── Right: chat area ── */}
@@ -583,7 +587,7 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
           {purchasedSubjects.map(subject => (
             <button
               key={subject}
-              onClick={() => setActiveSubject(subject)}
+              onClick={() => { setActiveSubject(subject); setSubjectChosen(true); }}
               className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 activeSubject === subject
                   ? "bg-blue-500 text-white shadow-sm"
@@ -598,7 +602,13 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
         {/* Message list */}
         <div className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6">
           {isEmpty ? (
-            <WelcomeScreen studentName={studentName} onSend={sendMessage} />
+            <WelcomeScreen
+              studentName={studentName}
+              yearLevel={yearLevel}
+              activeSubject={activeSubject}
+              subjectChosen={subjectChosen}
+              onSend={sendMessage}
+            />
           ) : (
             <div className="max-w-2xl mx-auto flex flex-col">
               {messages.map((msg, idx) => {

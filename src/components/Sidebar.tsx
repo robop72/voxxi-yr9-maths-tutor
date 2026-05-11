@@ -19,6 +19,8 @@ interface Props {
   onToggleTheme: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 function timeLabel(ts: number) {
@@ -124,7 +126,7 @@ function SessionRow({ s, currentId, menuOpenId, setMenuOpenId, onLoadSession, on
 export default function Sidebar({
   sessions, currentId, studentName, onUpdateName,
   onNewChat, onLoadSession, onDeleteSession, onTogglePin, onOpenSearch, dark, onToggleTheme,
-  mobileOpen, onMobileClose,
+  mobileOpen, onMobileClose, isOpen, onToggle,
 }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [nameInput, setNameInput] = useState(studentName);
@@ -162,10 +164,36 @@ export default function Sidebar({
 
   return (
     <aside ref={sidebarRef} className={`
-      flex-shrink-0 flex flex-col h-full w-64 bg-[#f0f4f9] dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
-      fixed md:relative inset-y-0 left-0 z-40 transition-transform duration-300
-      ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      flex-shrink-0 flex flex-col h-full bg-[#f0f4f9] dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
+      fixed md:relative inset-y-0 left-0 z-40 transition-all duration-300
+      ${mobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"}
+      ${isOpen ? "md:w-64" : "md:w-14"}
     `}>
+
+      {/* Collapsed rail — desktop only */}
+      <div className={`hidden flex-col items-center pt-5 gap-3 ${!isOpen ? "md:flex" : ""}`}>
+        <button
+          onClick={onToggle}
+          title="Expand sidebar"
+          className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <button
+          onClick={onNewChat}
+          title="New Chat"
+          className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Full sidebar content — hidden on desktop when collapsed */}
+      <div className={`flex flex-col flex-1 min-h-0 overflow-hidden ${!isOpen ? "md:hidden" : ""}`}>
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
@@ -180,8 +208,17 @@ export default function Sidebar({
             priority
           />
         </div>
-        {/* Search icon + mobile close */}
+        {/* Collapse (desktop) + search + mobile close */}
         <div className="flex items-center gap-1">
+        <button
+          onClick={onToggle}
+          title="Collapse sidebar"
+          className="hidden md:flex p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
         <button
           onClick={onOpenSearch}
           title="Search chats"
@@ -337,6 +374,8 @@ export default function Sidebar({
           </div>
         )}
       </div>
+
+      </div>{/* end full sidebar content */}
     </aside>
   );
 }
