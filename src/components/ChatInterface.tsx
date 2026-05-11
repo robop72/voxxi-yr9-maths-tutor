@@ -154,7 +154,7 @@ function ThinkingBubble() {
       {/* Text + animated dots */}
       <div className="flex items-center gap-1.5">
         <span className="text-sm text-gray-500 dark:text-gray-400 italic">
-          Voxxi is thinking
+          Voxii is thinking
         </span>
         <span className="flex items-end gap-0.5 pb-0.5">
           {[0, 1, 2].map(i => (
@@ -678,7 +678,7 @@ export default function ChatInterface({ purchasedSubjects }: { purchasedSubjects
                 value={input}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
-                placeholder={`Ask Voxxi ${activeSubject.match(/^[AEIOUaeiou]/) ? "an" : "a"} ${activeSubject} question…`}
+                placeholder={`Ask Voxii ${activeSubject.match(/^[AEIOUaeiou]/) ? "an" : "a"} ${activeSubject} question…`}
                 className="flex-1 resize-none bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none leading-relaxed max-h-40 py-1"
               />
 
