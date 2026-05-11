@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -9,9 +11,7 @@ interface ExpertMessageProps {
 }
 
 const ExpertMessage: React.FC<ExpertMessageProps> = ({ text }) => {
-  // Regex to detect the
- tags from your backend
-  const imageRegex = /\/g;
+  const imageRegex = /<image>(.*?)<\/image>/g;
   const parts = text.split(imageRegex);
 
   return (
@@ -39,14 +39,11 @@ const ExpertMessage: React.FC<ExpertMessageProps> = ({ text }) => {
 
         // Otherwise, render as Markdown with Math support
         return (
-          <ReactMarkdown
-            key={index}
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            className="prose prose-slate max-w-none"
-          >
-            {part}
-          </ReactMarkdown>
+          <div key={index} className="prose prose-slate max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {part}
+            </ReactMarkdown>
+          </div>
         );
       })}
     </div>

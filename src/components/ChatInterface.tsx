@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, Loader2, Sparkles } from 'lucide-react';
 import ExpertMessage from './ExpertMessage';
@@ -72,7 +74,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ yearLevel, subject, sessi
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-5xl mx-auto bg-slate-50 shadow-2xl">
+    <div className="flex flex-col h-full max-w-5xl mx-auto bg-slate-50 shadow-2xl">
       {/* Expert Header */}
       <div className="p-5 border-b bg-white flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
