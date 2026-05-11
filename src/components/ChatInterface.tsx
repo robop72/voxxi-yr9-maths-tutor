@@ -579,7 +579,7 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxxi Maths Tutor</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxxi {activeSubject} Tutor</span>
         </div>
 
         {/* Subject selector */}
@@ -659,7 +659,7 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
                 value={input}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Voxxi a maths question…"
+                placeholder={`Ask Voxxi a ${activeSubject.toLowerCase()} question…`}
                 className="flex-1 resize-none bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none leading-relaxed max-h-40 py-1"
               />
 
