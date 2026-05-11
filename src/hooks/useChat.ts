@@ -25,7 +25,7 @@ function makeSession(title = "New Chat"): ChatSession {
   return { id: uuidv4(), title, messages: [], createdAt: Date.now() };
 }
 
-export function useChat() {
+export function useChat({ yearLevel }: { yearLevel: string }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentId, setCurrentId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +34,8 @@ export function useChat() {
   const isLoadingRef = useRef(false);
   const apiSessionRef = useRef(uuidv4());
   const abortRef = useRef<AbortController | null>(null);
+  const yearLevelRef = useRef(yearLevel);
+  useEffect(() => { yearLevelRef.current = yearLevel; }, [yearLevel]);
 
   useEffect(() => { currentIdRef.current = currentId; }, [currentId]);
 
@@ -145,7 +147,7 @@ export function useChat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: apiSessionRef.current, message: text.trim() }),
+        body: JSON.stringify({ session_id: apiSessionRef.current, message: text.trim(), year_level: yearLevelRef.current }),
         signal: controller.signal,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

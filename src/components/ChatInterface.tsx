@@ -365,9 +365,9 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export default function ChatInterface() {
+export default function ChatInterface({ yearLevel }: { yearLevel: string }) {
   const { dark, toggle: toggleTheme } = useTheme();
-  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat();
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat({ yearLevel });
 
   const [studentName, setStudentName] = useState("Student");
   const [searchOpen, setSearchOpen] = useState(false);
