@@ -365,9 +365,16 @@ function WelcomeScreen({ studentName, onSend }: { studentName: string; onSend: (
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export default function ChatInterface({ yearLevel }: { yearLevel: string }) {
+export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLevel: string; purchasedSubjects: string[] }) {
+  const [activeSubject, setActiveSubject] = useState(purchasedSubjects[0] ?? "");
   const { dark, toggle: toggleTheme } = useTheme();
-  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat({ yearLevel });
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat({ yearLevel, subject: activeSubject });
+
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
+    startNewChat();
+  }, [activeSubject]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [studentName, setStudentName] = useState("Student");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -569,6 +576,23 @@ export default function ChatInterface({ yearLevel }: { yearLevel: string }) {
             </svg>
           </button>
           <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxxi Maths Tutor</span>
+        </div>
+
+        {/* Subject selector */}
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-x-auto scrollbar-none">
+          {purchasedSubjects.map(subject => (
+            <button
+              key={subject}
+              onClick={() => setActiveSubject(subject)}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                activeSubject === subject
+                  ? "bg-blue-500 text-white shadow-sm"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              {subject}
+            </button>
+          ))}
         </div>
 
         {/* Message list */}
