@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Voxxi — Year 9 Maths Tutor",
-  description: "AI-powered Year 9 Maths Tutor by Voxii",
+  title: "Voxxi — Secondary AI Tutor",
+  description: "AI-powered secondary school tutor for Year 7–12, covering Maths, Science, and English. Victorian Curriculum 2.0.",
 };
 
 export default function RootLayout({

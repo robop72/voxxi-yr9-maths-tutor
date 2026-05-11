@@ -331,7 +331,7 @@ function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, o
         {headline}
       </h2>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
-        Select a curriculum strand to explore topics, or ask me anything below.
+        Secondary School · Year 7–12 · Victorian Curriculum 2.0
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
@@ -365,16 +365,19 @@ function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, o
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLevel: string; purchasedSubjects: string[] }) {
+const YEAR_LEVELS = ["Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12"];
+
+export default function ChatInterface({ purchasedSubjects }: { purchasedSubjects: string[] }) {
   const [activeSubject, setActiveSubject] = useState(purchasedSubjects[0] ?? "");
+  const [activeYearLevel, setActiveYearLevel] = useState("Year 7");
   const { dark, toggle: toggleTheme } = useTheme();
-  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat({ yearLevel, subject: activeSubject });
+  const { sessions, currentId, messages, isLoading, sendMessage, startNewChat, loadSession, deleteSession, togglePin, injectSafetyMessage, cancelMessage } = useChat({ yearLevel: activeYearLevel, subject: activeSubject });
 
   const mountedRef = useRef(false);
   useEffect(() => {
     if (!mountedRef.current) { mountedRef.current = true; return; }
     startNewChat();
-  }, [activeSubject]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeSubject, activeYearLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [studentName, setStudentName] = useState("Student");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -582,8 +585,24 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
           <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxxi {activeSubject} Tutor</span>
         </div>
 
-        {/* Subject selector */}
+        {/* Year + Subject selector bar */}
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-x-auto scrollbar-none">
+          {/* Year level dropdown */}
+          <select
+            value={activeYearLevel}
+            onChange={e => setActiveYearLevel(e.target.value)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 outline-none cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors appearance-none pr-6 relative"
+            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%236b7280'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center", backgroundSize: "12px" }}
+          >
+            {YEAR_LEVELS.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+
+          {/* Subject pills */}
           {purchasedSubjects.map(subject => (
             <button
               key={subject}
@@ -604,7 +623,7 @@ export default function ChatInterface({ yearLevel, purchasedSubjects }: { yearLe
           {isEmpty ? (
             <WelcomeScreen
               studentName={studentName}
-              yearLevel={yearLevel}
+              yearLevel={activeYearLevel}
               activeSubject={activeSubject}
               subjectChosen={subjectChosen}
               onSend={sendMessage}
