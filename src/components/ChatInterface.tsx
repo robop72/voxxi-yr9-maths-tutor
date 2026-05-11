@@ -109,7 +109,7 @@ function MarkdownText({ text }: { text: string }) {
   return <div className="space-y-1">{nodes}</div>;
 }
 
-// ─── Voxxi thinking animation ─────────────────────────────────────────────────
+// ─── Voxii thinking animation ─────────────────────────────────────────────────
 
 function ThinkingBubble() {
   return (
@@ -320,7 +320,7 @@ function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, o
   const strands = curriculumStrands[activeSubject] ?? [];
   const headline = subjectChosen
     ? `I'm your ${activeSubject} study friend`
-    : `I am Voxxi your ${yearLevel} Tutor`;
+    : `I am Voxii your ${yearLevel} Tutor`;
 
   return (
     <div className="flex flex-col max-w-2xl mx-auto px-4 pt-4 md:pt-6 pb-4">
@@ -356,7 +356,7 @@ function WelcomeScreen({ studentName, yearLevel, activeSubject, subjectChosen, o
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         <p className="text-xs text-blue-600 dark:text-blue-300 leading-relaxed">
-          <strong>Stay safe:</strong> Don&apos;t share your full name, school, phone number, or address in this chat. Voxxi is here for {activeSubject.toLowerCase()} only.
+          <strong>Stay safe:</strong> Don&apos;t share your full name, school, phone number, or address in this chat. Voxii is here for {activeSubject.toLowerCase()} only.
         </p>
       </div>
     </div>
@@ -582,7 +582,7 @@ export default function ChatInterface({ purchasedSubjects }: { purchasedSubjects
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxxi {activeSubject} Tutor</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Voxii {activeSubject} Tutor</span>
         </div>
 
         {/* Year + Subject selector bar */}

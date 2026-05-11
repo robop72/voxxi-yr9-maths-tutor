@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Voxxi — Secondary AI Tutor",
+  title: "Voxii — Secondary AI Tutor",
   description: "AI-powered secondary school tutor for Year 7–12, covering Maths, Science, and English. Victorian Curriculum 2.0.",
 };
 
