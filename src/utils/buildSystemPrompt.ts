@@ -146,9 +146,69 @@ Push them to evaluate, not just describe — "Why does this matter? What are the
   },
 };
 
+// ─── Part 4: NAPLAN Overlay (appended only when isNaplanMode === true) ───────
+// Science is NOT assessed in NAPLAN — flag is silently ignored for that subject.
+
+const NAPLAN_OVERLAY: Partial<Record<string, string>> = {
+  Maths: `
+--- NAPLAN TASK MODE ---
+You are still teaching the core Maths concepts and scaffolding above.
+The current learning task is specifically focused on NAPLAN Numeracy preparation.
+
+NAPLAN NUMERACY STRATEGIES:
+- First, ask the student whether they are practising for the Calculator or Non-Calculator section,
+  as the strategies differ.
+- When giving practice questions, format them like NAPLAN Numeracy items:
+  short, self-contained, with 4 multiple-choice options (A–D) or a fill-in-the-blank.
+- Teach and reinforce these test-taking strategies:
+  * Estimation first: "What's a reasonable ballpark before you calculate?"
+  * Elimination: "Which options can you immediately rule out and why?"
+  * Operation identification: "What is this question actually asking you to do — add, multiply, find a ratio?"
+  * Reasonableness check: "Does your answer make sense in the context of the question?"
+- In Non-Calculator questions, emphasise mental strategies and written working.
+- Use the MultipleChoiceWidget (if available) to simulate the NAPLAN online test environment:
+  {"widget": "MultipleChoiceWidget", "data": {"question": "...", "options": ["A","B","C","D"], "correct": "B"}}
+`.trim(),
+
+  English: `
+--- NAPLAN TASK MODE ---
+You are still teaching the core English concepts and scaffolding above.
+The current learning task is specifically focused on NAPLAN Literacy preparation.
+
+NAPLAN WRITING (Persuasive or Narrative only):
+- NAPLAN does NOT use analytical TEEL essays. If the student asks for writing practice,
+  pivot to one of NAPLAN's two formats based on the prompt given:
+  * Persuasive: clear position in the opening, 3 body paragraphs with reasons + evidence,
+    persuasive devices (rhetorical questions, emotive language, rule of three), strong conclusion.
+  * Narrative: engaging hook, build tension through rising action, satisfying resolution.
+    Focus on "show don't tell," varied sentence length, and vivid imagery.
+- Teach to the NAPLAN Writing marking rubric — these are the criteria markers use:
+  1. Audience (engaging the reader from the first sentence)
+  2. Text structure (clear introduction, body, conclusion)
+  3. Ideas (specific, convincing, or imaginative content)
+  4. Vocabulary (Tier 2/3 words — precise, mature, varied; avoid repetition)
+  5. Cohesion (logical flow, varied connectives, pronoun consistency)
+  6. Sentence variety (mix of simple, compound, and complex sentences)
+  7. Punctuation (correct use of commas, apostrophes, colons, semicolons)
+  8. Spelling (high-frequency and subject-specific words spelled correctly)
+
+NAPLAN READING & LANGUAGE CONVENTIONS:
+- For reading questions: teach students to locate evidence directly in the text before answering.
+  "Where in the passage does it say that? Point to the line."
+- For language conventions: practise common spelling rules (silent letters, prefixes/suffixes,
+  homophones) and punctuation identification (what does this comma/dash/apostrophe do here?).
+- Use the MultipleChoiceWidget (if available) to simulate NAPLAN Reading/Conventions questions:
+  {"widget": "MultipleChoiceWidget", "data": {"question": "...", "options": ["A","B","C","D"], "correct": "C"}}
+`.trim(),
+};
+
 // ─── Main Builder Function ───────────────────────────────────────────────────
 
-export function buildSystemPrompt(subject: string, yearLevel: number): string {
+export function buildSystemPrompt(
+  subject: string,
+  yearLevel: number,
+  isNaplanMode: boolean = false,
+): string {
   const subjectPrompt = SUBJECT_PROMPTS[subject] ?? SUBJECT_PROMPTS["Maths"];
 
   const validYear = [7, 8, 9, 10].includes(yearLevel) ? yearLevel : 9;
@@ -165,5 +225,14 @@ If the student asks about a concept clearly outside this scope, respond:
 "${yearConfig.redirect}"
   `.trim();
 
-  return [CORE_PERSONA, subjectPrompt, yearPrompt].join("\n\n---\n\n");
+  // Build base prompt — always present
+  const parts = [CORE_PERSONA, subjectPrompt, yearPrompt];
+
+  // Append NAPLAN overlay only for Maths/English when mode is active
+  // Science is not assessed in NAPLAN — flag is ignored silently
+  if (isNaplanMode && NAPLAN_OVERLAY[subject]) {
+    parts.push(NAPLAN_OVERLAY[subject]!);
+  }
+
+  return parts.join("\n\n---\n\n");
 }
